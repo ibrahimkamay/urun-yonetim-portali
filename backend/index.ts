@@ -1,11 +1,12 @@
-const express = require("express");
-const app = express();
-require("dotenv").config();
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const productRoutes = require("./routes/productRoutes")
-const dashboardRoutes = require("./routes/dashboardRoutes");
-const cors = require("cors");
+import express, { Request, Response, Application } from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import authRoutes from "./routes/authRoutes";
+import userRoutes from "./routes/userRoutes";
+import productRoutes from "./routes/productRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
+dotenv.config();
+const app:Application = express();
 
 // CORS middleware önce gelir
 app.use(cors({
@@ -15,7 +16,7 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
     res.status(201).json({
         "message": "true"
     })
@@ -28,6 +29,6 @@ app.use("/api/dashboard", dashboardRoutes);
 
 const port = process.env.PORT || 8002;
 //server'ı başlat.
-app.listen(port, (req, res) => {
+app.listen(port, () => {
     console.log(`Server şurada başlatıldı. ${port}`);
 })

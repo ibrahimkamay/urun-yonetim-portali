@@ -1,10 +1,12 @@
-const bcrypt = require("bcryptjs");
-const { PrismaClient } = require("../generated/prisma");
+import bcrypt from "bcryptjs";
+import { PrismaClient } from "@prisma/client";
+import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+
 const prisma = new PrismaClient();
-const jwt = require("jsonwebtoken");
 
-
-const register = async (req, res) => {
+class AuthController {
+static register = async (req: Request, res: Response) => {
   try {
     const { username, password, email, role = 'user' } = req.body;
     if (!username || !password || !email) {
@@ -61,8 +63,7 @@ const register = async (req, res) => {
     });
   }
 }
-
-const login = async (req, res) => {
+static login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({
@@ -73,13 +74,13 @@ const login = async (req, res) => {
         "message": "Bu kullanıcı hatalı"
       })
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password as string);
     if (!isMatch) {
       return res.status(400).json({
         "message": `Invalid`
       })
     }
-    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_ACCESS_SECRET, {
+    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_ACCESS_SECRET as string, {
       expiresIn: '7d',
     });
     return res.status(200).json({ 
@@ -101,6 +102,10 @@ const login = async (req, res) => {
     })
   }
 }
+}
 
 
-module.exports = { register, login };
+
+
+
+export default AuthController;
