@@ -7,6 +7,7 @@ class UserController {
   static async getAllUsers(req: Request, res: Response) {
     try {
       const users = await prisma.user.findMany({
+      where: {deletedAt: null},
         select: {
           id: true,
           email: true,
@@ -128,12 +129,10 @@ class UserController {
         });
       }
 
-      const deletedUser = await prisma.user.delete({
+      const deletedUser = await prisma.user.update({
         where: { id: parseInt(userId) },
-        select: {
-          id: true,
-          email: true,
-          name: true,
+        data: {
+          deletedAt: newDate()
         }
       });
 
