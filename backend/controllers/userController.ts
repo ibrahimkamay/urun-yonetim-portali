@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -78,6 +79,63 @@ class UserController {
       console.error(error);
       res.status(500).json({ error: "Profil getirilemedi" });
     }
+  }
+
+  static async createUser(req: Request, res:Response) {
+    try {
+      const {username, email, password, role} = req.body;
+      if(!username || !password || !email) {
+        return res.status(400).json({
+          error: "username, password ve email zorunludur."
+        })
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: "Geçerli bir email adresi girin"
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: "Şifre en az 6 karakter olmalıdır"
+      });
+    }
+    if (role && !["admin", "user"].includes(role)) {
+      return res.status(400).json({
+        error: "Geçersiz rol"
+      });
+    }
+    const checkEmail = await prisma.user.findUnique({
+      where: {email}
+    })
+    if (checkEmail) {
+      return res.status(400).json({
+        message: "Bu email zaten kayıtlı."
+      })
+    }
+
+   const hashPassword = await bcrypt.hash(password, 12);
+   const user = await prisma.user.create({
+    data:{
+      name: username,
+      email,
+      password: hashPassword,
+      role
+    }
+   })
+   return res.status(201).json({
+     message: "Kullanıcı başarıyla oluşturuldu",
+     user,
+   })
+
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+      error: "Bir hata oluştu",
+    });
+      
+    }
+
   }
 
   static async updateUserRole(req: Request, res: Response) {

@@ -7,6 +7,16 @@ export const userService = {
     return response.data.users;
   },
 
+  async createUser(userData: {
+    username: string;
+    email: string;
+    password: string;
+    role?: 'admin' | 'user';
+  }): Promise<User> {
+    const response = await api.post('/users', userData);
+    return response.data.user;
+  },
+
   async getUserProfile(userId: number): Promise<User> {
     const response = await api.get(`/users/${userId}`);
     return response.data.user;

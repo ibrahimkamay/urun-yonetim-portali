@@ -2,8 +2,8 @@ import api from '@/lib/api';
 import { RegisterFormData, AuthResponse, User } from '@/types';
 
 export const authService = {
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post('/auth/login', { email, password });
+  async login(credentials: { email: string; password: string }): Promise<AuthResponse> {
+    const response = await api.post('/auth/login', credentials);
     return response.data;
   },
 

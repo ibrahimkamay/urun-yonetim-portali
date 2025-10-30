@@ -6,6 +6,7 @@ import UserController from "../controllers/userController";
 const router: Router = express.Router();
 
 router.get("/", AuthMiddleware.authenticateToken, RoleMiddleware.authorize("admin"), UserController.getAllUsers);
+router.post("/", AuthMiddleware.authenticateToken, RoleMiddleware.authorize("admin"), UserController.createUser);
 router.get("/:userId", AuthMiddleware.authenticateToken, UserController.getUserProfile);
 router.put("/:userId", AuthMiddleware.authenticateToken, RoleMiddleware.authorize("admin"), UserController.updateUserRole);
 router.delete("/:userId", AuthMiddleware.authenticateToken, RoleMiddleware.authorize("admin"), UserController.deleteUser);
