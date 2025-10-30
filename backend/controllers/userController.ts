@@ -132,7 +132,7 @@ class UserController {
       const deletedUser = await prisma.user.update({
         where: { id: parseInt(userId) },
         data: {
-          deletedAt: newDate()
+          deletedAt: new Date()
         }
       });
 
