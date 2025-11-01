@@ -71,13 +71,13 @@ static login = async (req: Request, res: Response) => {
     })
     if (!user) {
       return res.status(401).json({
-        "message": "Bu kullanıcı hatalı"
+        "message": "Email veya şifre hatalı"
       })
     }
-    const isMatch = await bcrypt.compare(password, user.password as string);
+    const isMatch = awai54t bcrypt.compare(password, user.password as string);
     if (!isMatch) {
-      return res.status(400).json({
-        "message": `Invalid`
+      return res.status(401).json({
+        "message": `Email veya şifre hatalı`
       })
     }
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_ACCESS_SECRET as string, {
