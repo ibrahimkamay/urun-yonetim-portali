@@ -1,28 +1,19 @@
-import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
-
-const prisma = new PrismaClient();
+import ProductService from "../services/productServices";
 
 class ProductController {
   static async getAllProducts(req: Request, res: Response) {
     try {
-      const products = await prisma.product.findMany({
-        include: {
-          owner: {
-            select: { name: true, email: true }
-          }
-        }
-      });
-
+      const products = await ProductService.getAllProduct();
       res.json({
         message: "Ürünler başarıyla getirildi.",
         products,
-        total: products.length
+        total: products.length,
       });
     } catch (error) {
       console.log(error);
       res.status(500).json({
-        error: "Ürünler getirilemedi."
+        error: "Ürünler getirilemedi.",
       });
     }
   }
@@ -34,34 +25,32 @@ class ProductController {
 
       if (!ownerId) {
         return res.status(401).json({
-          message: "Kimlik doğrulama gerekli"
+          message: "Kimlik doğrulama gerekli",
         });
       }
 
       if (!name) {
         return res.status(400).json({
-          message: "Ürün adı zorunludur."
+          message: "Ürün adı zorunludur.",
         });
       }
 
-      const product = await prisma.product.create({
-        data: {
-          name,
-          description,
-          priceCents,
-          stock,
-          ownerId,
-        }
+      const product = await ProductService.createProduct({
+        name,
+        description,
+        priceCents,
+        stock,
+        ownerId,
       });
 
       res.json({
         message: "Ürün başarıyla oluşturuldu",
-        product
+        product,
       });
     } catch (error) {
       console.error(error);
       res.status(500).json({
-        message: "Ürün oluşturulamadı"
+        message: "Ürün oluşturulamadı",
       });
     }
   }
@@ -69,40 +58,31 @@ class ProductController {
   static async updateProduct(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, description } = req.body;
+      const { name, description, priceCents, stock } = req.body;
+      const product = await ProductService.getProductById(id);
 
-      const product = await prisma.product.findUnique({
-        where: { id }
-      });
-
-      if (!product) {
-        return res.status(404).json({ message: "Ürün bulunamadı" });
+      if (req.user?.role !== "admin" && product.ownerId !== req.user?.userId) {
+        return res
+          .status(403)
+          .json({ message: "Bu ürünü güncelleme yetkiniz yok" });
       }
 
-      if (req.user?.role !== 'admin' && product.ownerId !== req.user?.userId) {
-        return res.status(403).json({ message: "Bu ürünü güncelleme yetkiniz yok" });
-      }
-
-      const updatedProduct = await prisma.product.update({
-        where: { id },
-        data: {
-          name,
-          description
-        },
-        select: {
-          name: true,
-          description: true,
-        }
+      const updatedProduct = await ProductService.updateProduct({
+        id,
+        name,
+        description,
+        priceCents,
+        stock,
       });
 
       res.json({
         message: "Ürün başarıyla güncellendi",
-        product: updatedProduct
+        product: updatedProduct,
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({
-        message: "Ürün güncellenemedi"
+      res.status(404).json({
+        message: "Ürün güncellenemedi",
       });
     }
   }
@@ -115,28 +95,17 @@ class ProductController {
 
       if (!userId) {
         return res.status(401).json({
-          message: "Kimlik doğrulama gerekli"
+          message: "Kimlik doğrulama gerekli",
         });
       }
-
-      const existingProduct = await prisma.product.findUnique({
-        where: { id },
-      });
-
-      if (!existingProduct) {
-        return res.status(404).json({ message: "Ürün bulunamadı" });
-      }
-
-      if (userRole !== "admin" && existingProduct.ownerId !== userId) {
+      const product = await ProductService.getProductById(id);
+      if (userRole !== "admin" && product.ownerId !== userId) {
         return res.status(403).json({
           message: "Bu ürünü silme yetkiniz yok",
         });
       }
 
-      await prisma.product.delete({
-        where: { id },
-      });
-
+      await ProductService.deleteProduct(id);
       res.json({
         message: "Ürün başarıyla silindi",
         deletedProductId: id,
@@ -144,8 +113,8 @@ class ProductController {
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ 
-        message: "Ürün silinemedi"
+      res.status(500).json({
+        message: "Ürün silinemedi",
       });
     }
   }

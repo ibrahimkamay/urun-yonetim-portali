@@ -31,17 +31,18 @@ model User {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
-  priceCents  Int      @default(0)
-  stock       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  priceCents  Int       @default(0)
+  stock       Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   ownerId Int
-  owner   User   @relation(fields: [ownerId], references: [id])
+  owner   User @relation(fields: [ownerId], references: [id])
 
   @@index([ownerId])
   @@index([createdAt])
