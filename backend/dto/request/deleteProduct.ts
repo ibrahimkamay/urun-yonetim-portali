@@ -1,0 +1,10 @@
+export class DeleteProductDTO {
+    id: string;
+    constructor(id:string) {
+        this.id = id;
+    }
+    validate() {
+        if (!this.id) throw new Error("Ürün id'si gerekli");
+    }
+
+}

@@ -3,6 +3,10 @@ import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import UserService from "../services/userService";
 import AuthService from "../services/authServices";
+import { CreateUserDTO } from "../dto/request/createUser";
+import { UpdateUserDTO } from "../dto/request/updateUser";
+import { DeleteUserDTO } from "../dto/request/deleteUser";
+import { UserResponseDTO } from "../dto/response/userResponse";
 
 const prisma = new PrismaClient();
 
@@ -10,10 +14,12 @@ class UserController {
   static async getAllUsers(req: Request, res: Response) {
     try {
       const users = await UserService.getAllUsers();
+      const responseDTOs = users.map(user => new UserResponseDTO(user));
+
 
       res.status(200).json({
         message: "Tüm kullanıcılar",
-        users,
+        users: responseDTOs,
         total: users.length,
         requestedBy: req.user?.userId,
       });
@@ -46,9 +52,11 @@ class UserController {
       }
 
       const user = await UserService.getUsersById(userId);
+      const responseDTO = new UserResponseDTO(user);
+
       res.json({
         message: "Profil bilgileri",
-        user,
+        user: responseDTO
       });
     } catch (error) {
       console.error(error);
@@ -58,37 +66,19 @@ class UserController {
 
   static async createUser(req: Request, res: Response) {
     try {
-      const { username, email, password, role } = req.body;
-      if (!username || !password || !email) {
-        return res.status(400).json({
-          error: "username, password ve email zorunludur.",
-        });
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          error: "Geçerli bir email adresi girin",
-        });
-      }
-      if (password.length < 6) {
-        return res.status(400).json({
-          error: "Şifre en az 6 karakter olmalıdır",
-        });
-      }
-      if (role && !["admin", "user"].includes(role)) {
-        return res.status(400).json({
-          error: "Geçersiz rol",
-        });
-      }
+      const createDTO = new CreateUserDTO(req.body);
+      createDTO.validate();
       const user = await UserService.createUser({
-        username,
-        email,
-        password,
-        role,
+        username: createDTO.username,
+        email: createDTO.email,
+        password: createDTO.password,
+        role: createDTO.role as "admin" | "user",
       });
+      const responseDTO = new UserResponseDTO(user);
+
       return res.status(201).json({
         message: "Kullanıcı başarıyla oluşturuldu",
-        user,
+        responseDTO,
       });
     } catch (error) {
       console.log(error);
@@ -103,23 +93,21 @@ class UserController {
       const { userId } = req.params;
       const { role } = req.body;
 
-      if (!["admin", "user"].includes(role)) {
-        return res.status(400).json({
-          message: "Geçersiz rol. Sadece 'admin' veya 'user' olabilir",
-        });
-      }
-
+      const updateDTO = new UpdateUserDTO({ id: userId, role });
+      updateDTO.validate();
       if (req.user?.userId === parseInt(userId)) {
         return res.status(400).json({
           message: "Kendi rolünüzü değiştiremezsiniz",
         });
       }
 
-      const updatedUser = UserService.updateUser(userId, role);
+      const updatedUser = UserService.updateUser(updateDTO.id, updateDTO.role as "admin" | "user");
+      const responseDTO = new UserResponseDTO(updatedUser);
+
 
       res.json({
         message: "Kullanıcı rolü güncellendi",
-        user: updatedUser,
+        user: responseDTO,
         updatedBy: req.user?.userId,
       });
     } catch (error) {
@@ -131,6 +119,8 @@ class UserController {
   static async deleteUser(req: Request, res: Response) {
     try {
       const { userId } = req.params;
+      const deleteDTO = new DeleteUserDTO(userId);
+      deleteDTO.validate();
 
       if (req.user?.userId === parseInt(userId)) {
         return res.status(400).json({
@@ -138,11 +128,13 @@ class UserController {
         });
       }
 
-      const deletedUser = UserService.deleteUser(userId);
+      const deletedUser = UserService.deleteUser(deleteDTO.id);
+      const responseDTO = new UserResponseDTO(deletedUser);
+
 
       res.json({
         message: "Kullanıcı silindi",
-        user: deletedUser,
+        user: responseDTO,
       });
     } catch (error) {
       console.error(error);

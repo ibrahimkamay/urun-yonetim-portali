@@ -1,14 +1,20 @@
 import { Request, Response } from "express";
+import { CreateProductDTO } from "../dto/request/createProduct";
+import { UpdateProductDTO } from "../dto/request/updateProduct";
+import { DeleteProductDTO } from "../dto/request/deleteProduct";
 import ProductService from "../services/productServices";
+import {ProductResponseDTO} from "../dto/response/productResponse";
 
 class ProductController {
   static async getAllProducts(req: Request, res: Response) {
     try {
       const products = await ProductService.getAllProduct();
+      const responseDTOs = products.map(p => new ProductResponseDTO(p));
+
       res.json({
         message: "Ürünler başarıyla getirildi.",
         products,
-        total: products.length,
+        total: responseDTOs.length,
       });
     } catch (error) {
       console.log(error);
@@ -20,32 +26,15 @@ class ProductController {
 
   static async createProduct(req: Request, res: Response) {
     try {
-      const { name, description, priceCents, stock } = req.body;
       const ownerId = req.user?.userId;
+      const createDTO = new CreateProductDTO({ ...req.body, ownerId });
+      createDTO.validate();
+      const product = await ProductService.createProduct(createDTO);
+      const responseDTO = new ProductResponseDTO(product);
 
-      if (!ownerId) {
-        return res.status(401).json({
-          message: "Kimlik doğrulama gerekli",
-        });
-      }
-
-      if (!name) {
-        return res.status(400).json({
-          message: "Ürün adı zorunludur.",
-        });
-      }
-
-      const product = await ProductService.createProduct({
-        name,
-        description,
-        priceCents,
-        stock,
-        ownerId,
-      });
-
-      res.json({
+      return res.status(201).json({
         message: "Ürün başarıyla oluşturuldu",
-        product,
+        responseDTO,
       });
     } catch (error) {
       console.error(error);
@@ -58,7 +47,8 @@ class ProductController {
   static async updateProduct(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, description, priceCents, stock } = req.body;
+      const updateDTO = new UpdateProductDTO({ ...req.body, id });
+      updateDTO.validate();
       const product = await ProductService.getProductById(id);
 
       if (req.user?.role !== "admin" && product.ownerId !== req.user?.userId) {
@@ -67,17 +57,12 @@ class ProductController {
           .json({ message: "Bu ürünü güncelleme yetkiniz yok" });
       }
 
-      const updatedProduct = await ProductService.updateProduct({
-        id,
-        name,
-        description,
-        priceCents,
-        stock,
-      });
+      const updatedProduct = await ProductService.updateProduct(updateDTO);
+      const responseDTO = new ProductResponseDTO(updatedProduct);
 
       res.json({
         message: "Ürün başarıyla güncellendi",
-        product: updatedProduct,
+        product: responseDTO,
       });
     } catch (error) {
       console.error(error);
@@ -90,6 +75,8 @@ class ProductController {
   static async deleteProduct(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const deleteDTO = new DeleteProductDTO(id);
+      deleteDTO.validate();
       const userRole = req.user?.role;
       const userId = req.user?.userId;
 
@@ -105,7 +92,7 @@ class ProductController {
         });
       }
 
-      await ProductService.deleteProduct(id);
+      await ProductService.deleteProduct(deleteDTO.id);
       res.json({
         message: "Ürün başarıyla silindi",
         deletedProductId: id,
