@@ -11,6 +11,7 @@ Modern ve güvenli bir full-stack ürün yönetim sistemi. Kullanıcı rolleri i
 - **Dashboard** - İstatistikler ve genel bakış
 - **Responsive Tasarım** - Mobil uyumlu modern arayüz
 - **Real-time Validasyon** - Form doğrulama ve hata yönetimi
+- **DTO Pattern** - Veri transferi için güvenli ve yapılandırılmış katman
 
 ## Teknoloji Stack'i
 
@@ -36,10 +37,14 @@ Modern ve güvenli bir full-stack ürün yönetim sistemi. Kullanıcı rolleri i
 ```
 urun-yonetim-portali/
 ├── backend/
-│   ├── controllers/        # İş mantığı
+│   ├── controllers/        # İş mantığı (DTO entegreli)
+│   ├── dto/                # Data Transfer Objects
+│   │   ├── request/        # Gelen veri validasyonu
+│   │   └── response/       # Giden veri formatlaması
 │   ├── middleware/         # Auth & Role middleware
 │   ├── prisma/            # Database schema & migrations
 │   ├── routes/            # API route'ları
+│   ├── services/          # Veritabanı işlemleri
 │   └── index.js           # Express server
 │
 ├── frontend/
@@ -56,6 +61,23 @@ urun-yonetim-portali/
 │
 └── README.md
 ```
+
+## Mimari ve DTO Pattern
+
+Bu projede veri bütünlüğünü ve güvenliğini sağlamak için **DTO (Data Transfer Object)** pattern kullanılmıştır.
+
+### Request DTOs
+Gelen verilerin doğrulanması (validation) ve tip güvenliği için kullanılır.
+- `CreateProductDTO`, `UpdateProductDTO`, `DeleteProductDTO`
+- `CreateUserDTO`, `UpdateUserDTO`, `DeleteUserDTO`
+- `LoginRequestDTO`, `RegisterRequestDTO`
+
+### Response DTOs
+Client'a dönecek verilerin formatlanması ve hassas verilerin (örn: password) gizlenmesi için kullanılır.
+- `ProductResponseDTO`
+- `UserResponseDTO`
+- `AuthResponseDTO`
+- `DashboardResponseDTO`
 
 ## Kurulum
 
@@ -80,7 +102,7 @@ npm install
 `.env` dosyası oluşturun:
 ```env
 DATABASE_URL="postgresql://kullanici:sifre@localhost:5432/veritabani"
-JWT_SECRET="your-secret-key-here"
+JWT_ACCESS_SECRET="your-secret-key-here"
 PORT=8001
 ```
 
@@ -91,7 +113,7 @@ npx prisma migrate dev
 
 Backend'i başlatın:
 ```bash
-npm start
+npm run dev
 ```
 
 ### 3. Frontend Kurulumu
@@ -134,29 +156,29 @@ npm run dev
 
 ### Authentication
 ```
-POST   /api/auth/register    # Yeni kullanıcı kaydı
-POST   /api/auth/login        # Kullanıcı girişi
+POST   /api/auth/register    # Yeni kullanıcı kaydı (RegisterRequestDTO)
+POST   /api/auth/login        # Kullanıcı girişi (LoginRequestDTO)
 ```
 
 ### Users (Admin Only)
 ```
-GET    /api/users             # Tüm kullanıcıları listele
+GET    /api/users             # Tüm kullanıcıları listele (UserResponseDTO)
 GET    /api/users/:id         # Kullanıcı detayı
-PUT    /api/users/:id         # Kullanıcı rolü güncelle
-DELETE /api/users/:id         # Kullanıcı sil
+PUT    /api/users/:id         # Kullanıcı rolü güncelle (UpdateUserDTO)
+DELETE /api/users/:id         # Kullanıcı sil (DeleteUserDTO)
 ```
 
 ### Products
 ```
-GET    /api/products          # Ürünleri listele
-POST   /api/products          # Yeni ürün ekle
-PUT    /api/products/:id      # Ürün güncelle
-DELETE /api/products/:id      # Ürün sil
+GET    /api/products          # Ürünleri listele (ProductResponseDTO)
+POST   /api/products          # Yeni ürün ekle (CreateProductDTO)
+PUT    /api/products/:id      # Ürün güncelle (UpdateProductDTO)
+DELETE /api/products/:id      # Ürün sil (DeleteProductDTO)
 ```
 
 ### Dashboard
 ```
-GET    /api/dashboard         # Dashboard istatistikleri
+GET    /api/dashboard         # Dashboard istatistikleri (DashboardResponseDTO)
 ```
 
 ## Güvenlik
@@ -167,6 +189,7 @@ GET    /api/dashboard         # Dashboard istatistikleri
 - Protected routes (frontend & backend)
 - CORS yapılandırması
 - HTTP-only token storage
+- DTO Validation Layer
 
 ## UI/UX Özellikleri
 
